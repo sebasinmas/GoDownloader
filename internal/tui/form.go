@@ -64,8 +64,8 @@ func RunInteractiveForm() (*FormData, error) {
 		huh.NewInput().
 			Key("cookie").
 			Title("Step 1: Session Cookie").
-			Description("Enter your session cookie (e.g., MoodleSession=123...):\n(Kept strictly in memory. Never logged or saved to disk)").
-			Placeholder("MoodleSession=abc123xyz456").
+			Description("Paste your session cookie token or full key=value:\n(e.g., 65bmfu... or MoodleSession=65bmfu... - Kept strictly in memory)").
+			Placeholder("65bmfuq58ghdd1pgdop4208pl2").
 			Value(&cookie).
 			Validate(func(s string) error {
 				if strings.TrimSpace(s) == "" {
@@ -109,15 +109,41 @@ func RunInteractiveForm() (*FormData, error) {
 
 // NormalizeCookie cleans and standardizes session cookies.
 // It trims whitespace, removes surrounding quotes, strips leading "Cookie:" prefix,
+// handles colon separators (e.g. MoodleSession:"..."), eliminates duplicate prefixes,
 // and if a raw token without key=value is supplied, prefixes "MoodleSession=".
 func NormalizeCookie(raw string) string {
 	c := strings.TrimSpace(raw)
-	c = strings.Trim(c, `"'`)
-	if strings.HasPrefix(strings.ToLower(c), "cookie:") {
+	c = strings.Trim(c, `"' `)
+
+	// Strip "Cookie:" or "cookie: " if copied from curl or headers
+	for strings.HasPrefix(strings.ToLower(c), "cookie:") {
 		c = strings.TrimSpace(c[7:])
+		c = strings.Trim(c, `"' `)
 	}
-	if c != "" && !strings.Contains(c, "=") {
-		c = "MoodleSession=" + c
+
+	// Handle colon separators (e.g., MoodleSession:"..." or "MoodleSession": "...")
+	if !strings.Contains(c, "=") && strings.Contains(c, ":") {
+		parts := strings.SplitN(c, ":", 2)
+		name := strings.Trim(strings.TrimSpace(parts[0]), `"' `)
+		val := strings.Trim(strings.TrimSpace(parts[1]), `"' `)
+		c = name + "=" + val
 	}
+
+	// Clean quotes and duplicate prefixes if key=value format
+	if strings.Contains(c, "=") {
+		parts := strings.SplitN(c, "=", 2)
+		name := strings.Trim(strings.TrimSpace(parts[0]), `"' `)
+		val := strings.Trim(strings.TrimSpace(parts[1]), `"' `)
+
+		if strings.EqualFold(name, "moodlesession") {
+			for strings.HasPrefix(strings.ToLower(val), "moodlesession=") || strings.HasPrefix(strings.ToLower(val), "moodlesession:") {
+				val = strings.Trim(strings.TrimSpace(val[14:]), `"' `)
+			}
+		}
+		c = name + "=" + val
+	} else if c != "" {
+		c = "MoodleSession=" + strings.Trim(c, `"' `)
+	}
+
 	return c
 }

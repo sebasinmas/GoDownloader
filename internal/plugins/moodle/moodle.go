@@ -139,8 +139,10 @@ func (p *Plugin) Download(ctx context.Context, task kernel.Task, progress kernel
 	if task.Cookie != "" {
 		req.Header.Set("Cookie", task.Cookie)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "application/pdf,*/*")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,application/pdf,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "es-CL,es;q=0.9,en;q=0.8")
+	req.Header.Set("Referer", "https://campusvirtual.ufro.cl/")
 
 	resp, err := p.client.Do(req)
 	if err != nil {

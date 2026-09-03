@@ -67,6 +67,30 @@ func TestNormalizeCookie(t *testing.T) {
 			input:    "custom_session=123; tracking=456",
 			expected: "custom_session=123; tracking=456",
 		},
+		{
+			input:    "MoodleSession=MoodleSession=abc123xyz",
+			expected: "MoodleSession=abc123xyz",
+		},
+		{
+			input:    "Cookie: MoodleSession=MoodleSession=abc123xyz",
+			expected: "MoodleSession=abc123xyz",
+		},
+		{
+			input:    `MoodleSession:"p07s7j0vkcf687k3a6m68nu5c9"`,
+			expected: "MoodleSession=p07s7j0vkcf687k3a6m68nu5c9",
+		},
+		{
+			input:    `"MoodleSession": "p07s7j0vkcf687k3a6m68nu5c9"`,
+			expected: "MoodleSession=p07s7j0vkcf687k3a6m68nu5c9",
+		},
+		{
+			input:    `MoodleSession="p07s7j0vkcf687k3a6m68nu5c9"`,
+			expected: "MoodleSession=p07s7j0vkcf687k3a6m68nu5c9",
+		},
+		{
+			input:    `"p07s7j0vkcf687k3a6m68nu5c9"`,
+			expected: "MoodleSession=p07s7j0vkcf687k3a6m68nu5c9",
+		},
 	}
 
 	for _, tc := range tests {

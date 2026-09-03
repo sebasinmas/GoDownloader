@@ -67,15 +67,16 @@ type allDoneMsg struct {
 }
 
 type progressModel struct {
-	kernel      *kernel.Kernel
-	tasks       []kernel.Task
-	items       []itemState
-	spinner     spinner.Model
-	startTime   time.Time
-	done        bool
-	results     []kernel.Result
-	eventChan   chan kernel.Event
-	logFilePath string
+	kernel        *kernel.Kernel
+	tasks         []kernel.Task
+	items         []itemState
+	spinner       spinner.Model
+	startTime     time.Time
+	totalDuration time.Duration
+	done          bool
+	results       []kernel.Result
+	eventChan     chan kernel.Event
+	logFilePath   string
 }
 
 func newProgressModel(k *kernel.Kernel, tasks []kernel.Task, logFilePath string) *progressModel {
@@ -140,6 +141,9 @@ func (m *progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case spinner.TickMsg:
+		if m.done {
+			return m, nil
+		}
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
@@ -150,6 +154,7 @@ func (m *progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case allDoneMsg:
 		m.done = true
+		m.totalDuration = time.Since(m.startTime).Round(time.Millisecond)
 		m.results = msg.results
 		return m, nil
 	}
@@ -228,7 +233,10 @@ func (m *progressModel) renderSummary() string {
 		}
 	}
 
-	duration := time.Since(m.startTime).Round(time.Millisecond)
+	duration := m.totalDuration
+	if duration == 0 {
+		duration = time.Since(m.startTime).Round(time.Millisecond)
+	}
 
 	logLine := ""
 	if m.logFilePath != "" {
