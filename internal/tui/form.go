@@ -6,7 +6,10 @@ import (
 	"net/url"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
+
+	"godownloader/internal/ui"
 )
 
 var (
@@ -49,10 +52,14 @@ type FormData struct {
 	URLs   []string
 }
 
-// RunInteractiveForm launches the 2-step Huh form:
-// Step 1: Session Cookie
-// Step 2: Multi-line URLs textarea
-func RunInteractiveForm() (*FormData, error) {
+// FormController encapsulates the Huh form and allows retrieving the resulting FormData.
+type FormController struct {
+	Form    *huh.Form
+	GetData func() *FormData
+}
+
+// NewInteractiveForm builds and returns the configured Huh form along with a data extractor.
+func NewInteractiveForm() *FormController {
 	var (
 		cookie  string
 		rawURLs string
@@ -94,17 +101,33 @@ func RunInteractiveForm() (*FormData, error) {
 
 	form := huh.NewForm(step1, step2).WithTheme(theme)
 
-	if err := form.Run(); err != nil {
-		if errors.Is(err, huh.ErrUserAborted) {
-			return nil, ErrFormAborted
-		}
+	return &FormController{
+		Form: form,
+		GetData: func() *FormData {
+			return &FormData{
+				Cookie: NormalizeCookie(cookie),
+				URLs:   CleanURLs(rawURLs),
+			}
+		},
+	}
+}
+
+// RunInteractiveForm launches the startup splash screen and seamlessly transitions
+// into the 2-step Huh form using Bubble Tea.
+func RunInteractiveForm() (*FormData, error) {
+	ctrl := NewInteractiveForm()
+	splash := ui.NewSplash(ctrl.Form)
+
+	p := tea.NewProgram(splash)
+	if _, err := p.Run(); err != nil {
 		return nil, err
 	}
 
-	return &FormData{
-		Cookie: NormalizeCookie(cookie),
-		URLs:   CleanURLs(rawURLs),
-	}, nil
+	if splash.Aborted() || ctrl.Form.State == huh.StateAborted {
+		return nil, ErrFormAborted
+	}
+
+	return ctrl.GetData(), nil
 }
 
 // NormalizeCookie cleans and standardizes session cookies.
