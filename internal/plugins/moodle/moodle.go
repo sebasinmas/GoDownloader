@@ -251,34 +251,60 @@ func writeStreamToFile(reader io.Reader, targetPath string, totalBytes int64, ta
 
 // ExtractFilename determines the best filename from the URL, Content-Disposition header, or fallback.
 func ExtractFilename(rawURL string, header http.Header, taskID int) string {
-	if header != nil {
-		if cd := header.Get("Content-Disposition"); cd != "" {
-			if _, params, err := mime.ParseMediaType(cd); err == nil {
-				if fname, ok := params["filename"]; ok && strings.TrimSpace(fname) != "" {
-					return sanitizeFilename(fname)
-				}
-			}
-		}
+	if name := filenameFromHeader(header); name != "" {
+		return name
 	}
 
-	parsed, err := url.Parse(rawURL)
-	if err == nil {
-		base := path.Base(parsed.Path)
-		if decoded, unescapeErr := url.PathUnescape(base); unescapeErr == nil && isMeaningfulFilename(decoded) {
-			return sanitizeFilename(decoded)
+	if u, err := url.Parse(rawURL); err == nil {
+		if name := filenameFromPath(u); name != "" {
+			return name
 		}
-
-		// Check query parameters (e.g., ?file=name.pdf)
-		for _, paramVal := range parsed.Query() {
-			for _, val := range paramVal {
-				if decoded, unescapeErr := url.QueryUnescape(val); unescapeErr == nil && strings.HasSuffix(strings.ToLower(decoded), ".pdf") {
-					return sanitizeFilename(decoded)
-				}
-			}
+		if name := filenameFromQuery(u); name != "" {
+			return name
 		}
 	}
 
 	return fmt.Sprintf("download_%d.pdf", taskID)
+}
+
+func filenameFromHeader(header http.Header) string {
+	if header == nil {
+		return ""
+	}
+	cd := header.Get("Content-Disposition")
+	if cd == "" {
+		return ""
+	}
+	_, params, err := mime.ParseMediaType(cd)
+	if err != nil {
+		return ""
+	}
+	fname := strings.TrimSpace(params["filename"])
+	if fname == "" {
+		return ""
+	}
+	return sanitizeFilename(fname)
+}
+
+func filenameFromPath(u *url.URL) string {
+	base := path.Base(u.Path)
+	decoded, err := url.PathUnescape(base)
+	if err == nil && isMeaningfulFilename(decoded) {
+		return sanitizeFilename(decoded)
+	}
+	return ""
+}
+
+func filenameFromQuery(u *url.URL) string {
+	for _, values := range u.Query() {
+		for _, val := range values {
+			decoded, err := url.QueryUnescape(val)
+			if err == nil && strings.HasSuffix(strings.ToLower(decoded), ".pdf") {
+				return sanitizeFilename(decoded)
+			}
+		}
+	}
+	return ""
 }
 
 func isMeaningfulFilename(name string) bool {

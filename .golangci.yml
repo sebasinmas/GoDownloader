@@ -1,30 +1,32 @@
 version: "2"
-
 run:
-  timeout: 5m
   tests: true
-
 linters:
   enable:
-    - errcheck
     - gocognit
     - gocyclo
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
     - revive
-
-linters-settings:
-  gocyclo:
-    min-complexity: 15
-  gocognit:
-    min-complexity: 20
-  errcheck:
-    check-type-assertions: true
-    check-blank: false
-
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+    gocognit:
+      min-complexity: 20
+    gocyclo:
+      min-complexity: 15
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
