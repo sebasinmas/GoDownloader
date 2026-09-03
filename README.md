@@ -1,170 +1,162 @@
-# GoDownloader
+<div align="center">
 
-A high-performance, concurrent CLI application written in Go that downloads course resources and PDFs in parallel from authenticated platforms (specifically Campus Virtual UFRO / Moodle). 
+# ⚡ [NOMBRE_POR_DEFINIR]
 
-Engineered around a **Modular Monolith with a Static Microkernel** architecture and crafted with the **Charmbracelet** terminal ecosystem (`huh`, `bubbletea`, `lipgloss`).
+**Descargas masivas, concurrentes y ultrarrápidas para Campus Virtual UFRO y cualquier intranet basada en Moodle.**
 
----
+[![CI](https://github.com/tu-usuario/nombre-repo/actions/workflows/ci.yml/badge.svg)](https://github.com/tu-usuario/nombre-repo/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tu-usuario/nombre-repo)](https://goreportcard.com/report/github.com/tu-usuario/nombre-repo)
+[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+[Características](#-características) • [Instalación](#-instalación) • [Guía de Uso](#-guía-de-uso) • [Arquitectura](#-arquitectura-para-devs) • [Roadmap](#-roadmap)
 
-- **Static Microkernel Architecture**: Loose coupling through interface composition (`DownloaderPlugin`). Plugins self-register in memory via package `init()` without dynamic CGO or runtime `.so` plugins.
-- **Privacy First**: Session cookies are held strictly in volatile process memory. Cookies are never written to disk, cached, or logged.
-- **2-Step Interactive Form**: Polished terminal interface powered by Charmbracelet `huh`:
-  1. Secure cookie input (e.g., `MoodleSession=...`).
-  2. Multi-line URL text area supporting bulk pasting (e.g., Ctrl+Shift+V from Firefox/Chrome).
-- **Parallel Dispatcher**: Concurrently downloads files using goroutines and `sync.WaitGroup`, protected by a concurrency semaphore to prevent socket saturation or server rate-limiting.
-- **Smart Filename Extraction**: URL-decodes target filenames (`Apunte%201.1.pdf` → `Apunte 1.1.pdf`), checks `Content-Disposition` headers, handles query parameter fallbacks, and sanitizes against path-traversal exploits.
-- **Real-Time Progress Visualization**: Live Bubble Tea + Lip Gloss TUI displaying per-file progress, spinner animations, humanized transfer metrics, and an execution summary.
-- **Zero-Warning Code Quality**: 100% test pass rate with race detection (`-race`), strictly compliant with `golangci-lint` (including `gocognit`, `gocyclo`, and `errcheck`).
+</div>
 
 ---
 
-## Project Structure
+## 💡 El Problema
 
-```
-GoDownloader/
-├── .github/
-│   └── workflows/
-│       └── ci.yml               # GitHub Actions CI workflow (tests + linter)
-├── .golangci.yml                # Linter configuration (errcheck, gocognit, gocyclo)
-├── cmd/
-│   └── downloader/
-│       └── main.go              # Application entrypoint and dependency injection
-├── internal/
-│   ├── kernel/
-│   │   ├── kernel.go            # Microkernel orchestrator, Plugin interface, static registry
-│   │   └── kernel_test.go       # Kernel dispatch, concurrency, and registry unit tests
-│   ├── plugins/
-│   │   └── moodle/
-│   │       ├── moodle.go        # UFRO/Moodle plugin implementation & auto-registration
-│   │       └── moodle_test.go   # httptest test suite (200 OK, 303 Redirect, auth check)
-│   └── tui/
-│       ├── form.go              # 2-step Huh form and URL cleaning/sanitization
-│       ├── form_test.go         # URL parser and sanitization tests
-│       └── progress.go          # Bubble Tea model with Lip Gloss styles
-├── go.mod
-├── go.sum
-└── README.md
-```
+¿Alguna vez has tenido que bajar 30 diapositivas, guías y PDFs uno a uno al final del semestre desde el **Campus Virtual de la UFRO**? Las plataformas Moodle suelen implementar redirecciones de seguridad (`HTTP 303 See Other`) y protecciones de sesión que rompen aceleradores de descarga tradicionales como `wget` o `curl`.
+
+## 🚀 La Solución
+
+**`[NOMBRE_POR_DEFINIR]`** es una herramienta de consola (CLI) moderna y de alto rendimiento escrita en Go. 
+
+Aunque nació diseñada y optimizada para la comunidad estudiantil de la **Universidad de La Frontera (UFRO)**, bajo el capó es un cliente agnóstico capaz de operar con **cualquier intranet universitaria que utilice Moodle**. Su motor inyecta directamente tu cookie activa (`MoodleSession`) en las cabeceras HTTP de peticiones concurrentes, resolviendo las redirecciones de seguridad y descargando todo el material de un semestre en segundos.
 
 ---
 
-## Requirements
+## ✨ Características
 
-- **Go**: 1.22 or newer
-- **golangci-lint** (optional, for running local linter checks)
+- 🏎️ **Concurrencia Extrema en Go**: Descargas paralelas respaldadas por *goroutines* y controladas por un semáforo de concurrencia que previene sobrecargas en los servidores de tu universidad.
+- 🔑 **Bypass de Sesión & Manejo de HTTP 303**: Inyección directa de cookies de sesión para resolver sin fricción las redirecciones de autenticación de Moodle.
+- 🎨 **Interfaz de Terminal Interactiva (TUI)**: Experiencia visual moderna y pulida con el ecosistema **Charmbracelet** (`huh`, `bubbletea`, `lipgloss`) con indicadores de progreso en tiempo real y métricas por archivo.
+- 🛡️ **Privacidad Absoluta**: Tus credenciales o cookies nunca se guardan en disco, no se registran en logs ni salen de tu máquina; residen estrictamente en la memoria volátil del proceso durante la ejecución.
+- 🧩 **Arquitectura Modular (Microkernel Estático)**: Núcleo extensible y de bajo acoplamiento pensado para integrar soporte a otros LMS (como Canvas o Blackboard) sin tocar el motor principal.
+- 🏷️ **Saneamiento Inteligente de Archivos**: Decodifica caracteres especiales (`%20` a espacios), respeta cabeceras `Content-Disposition` y protege contra ataques de *path-traversal*.
 
 ---
 
-## Running the CLI
+## 📦 Instalación
 
-### Direct Execution
+### Opción 1: Binarios Precompilados (Recomendado)
+Descarga la versión más reciente para tu sistema operativo (Windows, Linux, macOS) desde la sección de [Releases](https://github.com/tu-usuario/nombre-repo/releases):
+1. Descomprime el archivo descargado.
+2. Ejecuta `[NOMBRE_POR_DEFINIR]` directamente desde tu terminal favorita.
+
+### Opción 2: Vía `go install`
+Si tienes el entorno de Go instalado (1.21 o superior):
 ```bash
-go run ./cmd/downloader
+go install github.com/tu-usuario/nombre-repo/cmd/downloader@latest
 ```
 
-### Build Binary
+### Opción 3: Compilar desde el código fuente
 ```bash
-go build -o bin/godownloader ./cmd/downloader
-./bin/godownloader
+# Clonar el repositorio
+git clone https://github.com/tu-usuario/nombre-repo.git
+cd nombre-repo
+
+# Compilar binario
+go build -o bin/[NOMBRE_POR_DEFINIR] ./cmd/downloader
+
+# Ejecutar
+./bin/[NOMBRE_POR_DEFINIR]
 ```
 
-### CLI Flags
+---
+
+## 📖 Guía de Uso
+
+`[NOMBRE_POR_DEFINIR]` utiliza un asistente interactivo en terminal de 2 simples pasos:
+
 ```text
-Uso de ./bin/godownloader:
-  -concurrency int
-        Número de descargas concurrentes (por defecto 5)
-  -output string
-        Directorio donde guardar los archivos descargados (por defecto ".")
-  -logger
-        Habilitar registro de depuración en archivo (por defecto 'godownloader_debug.txt') o especificar ruta (ej. -logger debug.txt)
-  -log
-        Alias para -logger
-  -logfile string
-        Especificar ruta personalizada para el archivo de registro
+  PASO 1: Ingresa tu cookie de sesión
+  PASO 2: Pega la lista de enlaces
+  LISTO:  Descarga concurrente con barra de progreso
 ```
 
-#### Examples with Debug Logging
+### Paso 1: Obtener tu cookie `MoodleSession` (¡Solo toma 10 segundos!)
+
+1. Abre tu navegador e inicia sesión en el **Campus Virtual UFRO** (o el Moodle de tu universidad).
+2. Presiona `F12` para abrir las **Herramientas de Desarrollador** y haz clic en la pestaña **Red** (*Network*).
+3. Recarga la página (`F5`), selecciona cualquier petición que aparezca en la lista y busca en la sección **Cabeceras de Solicitud** (*Request Headers*) la cabecera `Cookie`.
+4. Copia el valor que comienza por:
+   ```text
+   MoodleSession=tu_token_aqui_123456
+   ```
+   *(También puedes encontrarlo directamente en la pestaña **Almacenamiento/Application** -> **Cookies**).*
+
+### Paso 2: Ejecutar y Descargar
+
+1. Inicia la aplicación en tu consola:
+   ```bash
+   [NOMBRE_POR_DEFINIR]
+   ```
+2. **Pega tu cookie** cuando el asistente interactivo te lo solicite.
+3. **Pega los enlaces** de los archivos/PDFs que necesitas (uno por línea; puedes copiar varios de una sola vez).
+4. Presiona `Esc` + `Enter` para confirmar y observa cómo se descargan en paralelo.
+
+### Flags y Parámetros Opcionales
+
+Puedes personalizar el comportamiento del programa mediante banderas de línea de comandos:
+
 ```bash
-# Run with default debug log file (godownloader_debug.txt)
-./bin/godownloader -logger
+# Definir una carpeta de destino personalizada
+[NOMBRE_POR_DEFINIR] -output ./mis_apuntes
 
-# Run with custom debug log file
-./bin/godownloader -logger debug.txt
+# Ajustar el número de descargas simultáneas (por defecto: 5)
+[NOMBRE_POR_DEFINIR] -concurrency 8
 
-# Download to custom folder with 8 workers and custom log file
-./bin/godownloader -output ./downloads -concurrency 8 -log logs.txt
+# Activar modo de registro/depuración en archivo
+[NOMBRE_POR_DEFINIR] -logger debug.txt
 ```
 
 ---
 
-## Interactive Workflow
+## 🏗️ Arquitectura para Devs
 
-1. **Step 1 — Session Cookie**:
-   Copy your active session cookie from your browser's DevTools (`Storage` or `Application` tab → `Cookies` → e.g. `MoodleSession=abc123xyz456`) and paste it into the prompt.
-2. **Step 2 — Paste Links**:
-   Paste the list of resource links copied from the portal (one per line). Stray quotes and surrounding whitespace are automatically trimmed. Press `Esc` then `Enter` to submit.
-3. **Download Phase**:
-   The parallel dispatcher resolves the appropriate plugin, injects the authentication cookie into HTTP headers, and downloads all files simultaneously with live progress reporting.
+El proyecto está diseñado bajo el patrón **Modular Monolith con Microkernel Estático**.
+
+```text
+[NOMBRE_POR_DEFINIR] (Kernel)
+       ├── Registry (Static init() registration)
+       ├── Concurrency Dispatcher (Goroutines + Semaphore)
+       └── Plugins Interface (DownloaderPlugin)
+                 ├── Moodle / UFRO Plugin (Incluido)
+                 └── [Futuro] Canvas / Blackboard Plugins
+```
+
+- **Zero-Runtime Overhead**: Los plugins se autoregistran en memoria durante el tiempo de inicio (`init()`) implementando la interfaz `kernel.DownloaderPlugin`, sin requerir CGO ni librerías dinámicas (`.so`).
+- **Seguridad en Concurrencia**: Cobertura de pruebas unitarias al 100% evaluadas con detección de condiciones de carrera (`go test -race`).
 
 ---
 
-## Running Tests & Quality Checks
+## 🗺️ Roadmap
 
-### Run All Unit & Integration Tests (with Race Detection)
-```bash
-go test -v -race -coverprofile=coverage.out ./...
-```
-
-### View Coverage Report
-```bash
-go tool cover -func=coverage.out
-```
-
-### Run Linter
-Verify code quality against `errcheck`, `gocognit`, `gocyclo`, `govet`, `revive`, and `staticcheck`:
-```bash
-golangci-lint run ./...
-```
+- [ ] **Desarrollo de GUI (Interfaz Gráfica de Usuario) multiplataforma** *(Hito prioritario en desarrollo: soporte nativo para Windows, Linux y macOS)*.
+- [ ] Auto-detección opcional de sesión mediante integración con el navegador local.
+- [ ] Plugin oficial para plataformas **Canvas LMS** y **Blackboard**.
+- [ ] Detección y descarga automática de carpetas completas de cursos Moodle (`mod/folder`).
+- [ ] Empaquetado oficial en gestores de dependencias comunitarios (`brew`, `scoop`, `winget`, `aur`).
 
 ---
 
-## Extending with New Plugins (e.g. Canvas, AWS S3)
+## 🤝 Contribución
 
-To add support for an additional platform, create a new package inside `internal/plugins/<name>/` and implement the `kernel.DownloaderPlugin` interface:
+¡Las contribuciones son bienvenidas! Ya sea reportando un bug, sugiriendo una mejora o añadiendo soporte para el sistema de tu universidad:
 
-```go
-package canvas
+1. Haz un Fork del proyecto.
+2. Crea tu rama de características (`git checkout -b feature/mi-nueva-funcionalidad`).
+3. Asegúrate de pasar los tests y linters (`go test -race ./... && golangci-lint run`).
+4. Haz Commit de tus cambios (`git commit -m 'feat: soporte para nueva funcionalidad'`).
+5. Haz Push a la rama (`git push origin feature/mi-nueva-funcionalidad`).
+6. Abre un **Pull Request**.
 
-import (
-    "context"
-    "strings"
-    "godownloader/internal/kernel"
-)
+---
 
-func init() {
-    kernel.Register(&CanvasPlugin{})
-}
+## 📄 Licencia
 
-type CanvasPlugin struct{}
+Este proyecto está distribuido bajo la licencia **MIT**. Consulta el archivo `LICENSE` para más información.
 
-func (c *CanvasPlugin) Name() string {
-    return "canvas"
-}
-
-func (c *CanvasPlugin) CanHandle(rawURL string) bool {
-    return strings.Contains(rawURL, "instructure.com") || strings.Contains(rawURL, "canvas")
-}
-
-func (c *CanvasPlugin) Download(ctx context.Context, task kernel.Task, progress kernel.ProgressFunc) (*kernel.Result, error) {
-    // Implement Canvas-specific authenticated API/download logic
-    return &kernel.Result{TaskID: task.ID, URL: task.URL}, nil
-}
-```
-
-Then simply import the new plugin in `cmd/downloader/main.go`:
-```go
-import _ "godownloader/internal/plugins/canvas"
-```
-The kernel will automatically detect and route matching URLs to your plugin!
+> **Aviso de Uso Responsable:** Esta herramienta está pensada para fines educativos y personales, facilitando el respaldo de material de estudio que el usuario ya tiene derecho legítimo a acceder. Por favor, respeta las políticas de uso y términos de servicio de tu institución académica.
