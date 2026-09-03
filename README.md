@@ -72,17 +72,17 @@ go build -o bin/godownloader ./cmd/downloader
 
 ### CLI Flags
 ```text
-Usage of ./bin/godownloader:
+Uso de ./bin/godownloader:
   -concurrency int
-        Number of concurrent downloads (default 5)
+        Número de descargas concurrentes (por defecto 5)
   -output string
-        Directory to save downloaded files (default ".")
+        Directorio donde guardar los archivos descargados (por defecto ".")
   -logger
-        Enable debug logging to file (default 'godownloader_debug.txt') or specify path (e.g. -logger debug.txt)
+        Habilitar registro de depuración en archivo (por defecto 'godownloader_debug.txt') o especificar ruta (ej. -logger debug.txt)
   -log
-        Alias for -logger
+        Alias para -logger
   -logfile string
-        Specify custom log file path
+        Especificar ruta personalizada para el archivo de registro
 ```
 
 #### Examples with Debug Logging

@@ -49,6 +49,18 @@ var (
 	boldStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("#F8F8F2"))
+
+	completoCard = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#FFB86C")).
+			Padding(0, 2).
+			MarginTop(1)
+
+	authorHighlight = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#FF2A85")).
+			Background(lipgloss.Color("#282A36")).
+			Padding(0, 1)
 )
 
 type itemState struct {
@@ -180,7 +192,7 @@ func (m *progressModel) applyEvent(ev kernel.Event) {
 func (m *progressModel) View() string {
 	var b strings.Builder
 
-	b.WriteString(titleStyle.Render("⚡ GoDownloader • Concurrent Resource Transfer"))
+	b.WriteString(titleStyle.Render("⚡ GoDownloader • Transferencia Concurrente de Recursos"))
 	b.WriteString("\n\n")
 
 	for _, it := range m.items {
@@ -190,6 +202,7 @@ func (m *progressModel) View() string {
 
 	if m.done {
 		b.WriteString(m.renderSummary())
+		b.WriteString(m.renderCompletoBox())
 	}
 
 	return b.String()
@@ -199,15 +212,15 @@ func (m *progressModel) renderItem(it itemState) string {
 	var statusBadge string
 	switch it.status {
 	case kernel.EventTaskCompleted:
-		statusBadge = successBadge.Render("  ✓ DONE   ")
+		statusBadge = successBadge.Render("  ✓ COMPLETADO ")
 	case kernel.EventTaskFailed:
-		statusBadge = failedBadge.Render("  ✗ FAILED ")
+		statusBadge = failedBadge.Render("  ✗ ERROR      ")
 	case kernel.EventTaskProgress:
-		statusBadge = downloadingBadge.Render(fmt.Sprintf("%s DOWNLOADING", m.spinner.View()))
+		statusBadge = downloadingBadge.Render(fmt.Sprintf("%s DESCARGANDO", m.spinner.View()))
 	case kernel.EventTaskStarted:
-		statusBadge = downloadingBadge.Render(fmt.Sprintf("%s STARTING   ", m.spinner.View()))
+		statusBadge = downloadingBadge.Render(fmt.Sprintf("%s INICIANDO  ", m.spinner.View()))
 	default:
-		statusBadge = pendingBadge.Render("  • PENDING  ")
+		statusBadge = pendingBadge.Render("  • PENDIENTE  ")
 	}
 
 	filename := boldStyle.Render(truncateString(it.filename, 32))
@@ -240,27 +253,27 @@ func (m *progressModel) renderSummary() string {
 
 	logLine := ""
 	if m.logFilePath != "" {
-		logLine = fmt.Sprintf("  Debug Log:        %s\n", boldStyle.Render(m.logFilePath))
+		logLine = fmt.Sprintf("  Registro de depuración: %s\n", boldStyle.Render(m.logFilePath))
 	}
 
-	helpHint := dimStyle.Render("Press Enter or 'q' to exit.")
+	helpHint := dimStyle.Render("Presiona Enter o 'q' para salir.")
 	if failed > 0 && m.logFilePath != "" {
-		helpHint = fmt.Sprintf("%s\n  %s", failedBadge.Render("Check debug log for error causes."), helpHint)
+		helpHint = fmt.Sprintf("%s\n  %s", failedBadge.Render("Revisa el registro de depuración para ver las causas del error."), helpHint)
 	}
 
 	summaryText := fmt.Sprintf(
-		"Downloads Completed in %s\n\n"+
-			"  Total Files:      %d\n"+
-			"  %s:   %d\n"+
-			"  %s:        %d\n"+
-			"  Transferred:      %s\n"+
+		"Descargas completadas en %s\n\n"+
+			"  Archivos totales: %d\n"+
+			"  %s:         %d\n"+
+			"  %s:          %d\n"+
+			"  Transferido:      %s\n"+
 			"%s\n"+
 			"%s",
 		duration,
 		len(m.tasks),
-		successBadge.Render("Successful"),
+		successBadge.Render("Exitosos"),
 		successful,
-		failedBadge.Render("Failed"),
+		failedBadge.Render("Fallidos"),
 		failed,
 		formatBytes(totalBytes),
 		logLine,
@@ -268,6 +281,11 @@ func (m *progressModel) renderSummary() string {
 	)
 
 	return cardBorder.Render(summaryText) + "\n"
+}
+
+func (m *progressModel) renderCompletoBox() string {
+	boxContent := fmt.Sprintf("🌭 Considera comprarle un completo al %s", authorHighlight.Render("SebaSinMas"))
+	return completoCard.Render(boxContent) + "\n"
 }
 
 // RunProgressUI starts the Bubble Tea parallel download progress interface.

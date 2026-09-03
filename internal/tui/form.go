@@ -11,7 +11,7 @@ import (
 
 var (
 	// ErrFormAborted indicates the user cancelled or exited the interactive form.
-	ErrFormAborted = errors.New("form aborted by user")
+	ErrFormAborted = errors.New("formulario cancelado por el usuario")
 )
 
 // CleanURLs parses, sanitizes, and filters raw pasted multiline URL text.
@@ -63,13 +63,13 @@ func RunInteractiveForm() (*FormData, error) {
 	step1 := huh.NewGroup(
 		huh.NewInput().
 			Key("cookie").
-			Title("Step 1: Session Cookie").
-			Description("Paste your session cookie token or full key=value:\n(e.g., 65bmfu... or MoodleSession=65bmfu... - Kept strictly in memory)").
+			Title("Paso 1: Cookie de Sesión").
+			Description("Pega el token de tu cookie de sesión o el formato clave=valor:\n(ej., 65bmfu... o MoodleSession=65bmfu... - Guardado solo en memoria)").
 			Placeholder("65bmfuq58ghdd1pgdop4208pl2").
 			Value(&cookie).
 			Validate(func(s string) error {
 				if strings.TrimSpace(s) == "" {
-					return errors.New("session cookie cannot be empty")
+					return errors.New("la cookie de sesión no puede estar vacía")
 				}
 				return nil
 			}),
@@ -78,15 +78,15 @@ func RunInteractiveForm() (*FormData, error) {
 	step2 := huh.NewGroup(
 		huh.NewText().
 			Key("urls").
-			Title("Step 2: Resource URLs").
-			Description("Paste your links here (one per line, press Esc then Enter to submit):").
+			Title("Paso 2: Enlaces de los Recursos").
+			Description("Pega tus enlaces aquí (uno por línea, presiona Esc y luego Enter para enviar):").
 			Placeholder("https://campusvirtual.ufro.cl/mod/resource/view.php?id=123/Apunte%201.pdf\nhttps://campusvirtual.ufro.cl/mod/resource/view.php?id=124/Guia%202.pdf").
 			Value(&rawURLs).
 			Lines(8).
 			Validate(func(s string) error {
 				valid := CleanURLs(s)
 				if len(valid) == 0 {
-					return errors.New("please paste at least one valid HTTP/HTTPS URL")
+					return errors.New("por favor pega al menos una URL válida (HTTP/HTTPS)")
 				}
 				return nil
 			}),

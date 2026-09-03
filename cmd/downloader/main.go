@@ -41,13 +41,13 @@ func (f *loggerFlag) IsBoolFlag() bool {
 }
 
 func main() {
-	concurrencyFlag := flag.Int("concurrency", 5, "Number of concurrent downloads")
-	outputDirFlag := flag.String("output", ".", "Directory to save downloaded files")
+	concurrencyFlag := flag.Int("concurrency", 5, "Número de descargas concurrentes")
+	outputDirFlag := flag.String("output", ".", "Directorio donde guardar los archivos descargados")
 
 	var logCfg loggerFlag
-	flag.Var(&logCfg, "logger", "Enable debug logging to file (default 'godownloader_debug.txt') or specify path (e.g. -logger debug.txt)")
-	flag.Var(&logCfg, "log", "Alias for -logger")
-	logFilePathExplicit := flag.String("logfile", "", "Specify custom log file path")
+	flag.Var(&logCfg, "logger", "Habilitar registro de depuración en archivo (por defecto 'godownloader_debug.txt') o especificar ruta (ej. -logger debug.txt)")
+	flag.Var(&logCfg, "log", "Alias para -logger")
+	logFilePathExplicit := flag.String("logfile", "", "Especificar ruta personalizada para el archivo de registro")
 	flag.Parse()
 
 	// Check if a path argument followed -logger or -log
@@ -65,10 +65,10 @@ func main() {
 	formData, err := tui.RunInteractiveForm()
 	if err != nil {
 		if errors.Is(err, tui.ErrFormAborted) {
-			fmt.Println("\nDownload cancelled by user.")
+			fmt.Println("\nDescarga cancelada por el usuario.")
 			os.Exit(0)
 		}
-		fmt.Fprintf(os.Stderr, "Error gathering form input: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error al capturar datos del formulario: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -82,7 +82,7 @@ func main() {
 
 	results, err := tui.RunProgressUI(k, tasks, logPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error during download execution: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error durante la ejecución de las descargas: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -96,13 +96,13 @@ func setupLogger(cfg loggerFlag, concurrency int, outputDir string, form *tui.Fo
 
 	l, err := logger.New(cfg.filePath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: failed to initialize debug logger: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Advertencia: no se pudo inicializar el registro de depuración: %v\n", err)
 		return nil, ""
 	}
 
-	l.Printf("GoDownloader initialized. Concurrency: %d | Output: %s", concurrency, outputDir)
-	l.Printf("Session Cookie: %s", logger.RedactCookie(form.Cookie))
-	l.Printf("Total URLs Queued: %d", len(form.URLs))
+	l.Printf("GoDownloader inicializado. Concurrencia: %d | Directorio: %s", concurrency, outputDir)
+	l.Printf("Cookie de sesión: %s", logger.RedactCookie(form.Cookie))
+	l.Printf("Total de URLs en cola: %d", len(form.URLs))
 	return l, cfg.filePath
 }
 
@@ -144,7 +144,7 @@ func handleCompletion(results []kernel.Result, logPath string) {
 	}
 
 	if logPath != "" {
-		fmt.Printf("\n📄 Debug log written to: %s\n", logPath)
+		fmt.Printf("\n📄 Registro de depuración guardado en: %s\n", logPath)
 	}
 
 	if hasErrors {
