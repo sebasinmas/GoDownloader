@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+
+	"godownloader/internal/logger"
 )
 
 var (
@@ -125,10 +127,18 @@ func ResetRegistry() {
 type Kernel struct {
 	plugins     []DownloaderPlugin
 	concurrency int
+	logger      *logger.Logger
 }
 
 // Option configures a Kernel instance.
 type Option func(*Kernel)
+
+// WithLogger associates a debug logger with the Kernel.
+func WithLogger(l *logger.Logger) Option {
+	return func(k *Kernel) {
+		k.logger = l
+	}
+}
 
 // WithConcurrency configures the maximum number of parallel downloads.
 func WithConcurrency(limit int) Option {
@@ -214,6 +224,10 @@ func (k *Kernel) Dispatch(ctx context.Context, tasks []Task, onEvent EventHandle
 }
 
 func (k *Kernel) executeTask(ctx context.Context, task Task, onEvent EventHandler) Result {
+	if k.logger != nil {
+		k.logger.LogTaskStart(task.ID, task.URL)
+	}
+
 	emitEvent(onEvent, Event{
 		Type:   EventTaskStarted,
 		TaskID: task.ID,
@@ -222,6 +236,9 @@ func (k *Kernel) executeTask(ctx context.Context, task Task, onEvent EventHandle
 
 	plugin, err := k.ResolvePlugin(task.URL)
 	if err != nil {
+		if k.logger != nil {
+			k.logger.LogTaskError(task.ID, task.URL, err)
+		}
 		res := Result{
 			TaskID: task.ID,
 			URL:    task.URL,
@@ -249,6 +266,9 @@ func (k *Kernel) executeTask(ctx context.Context, task Task, onEvent EventHandle
 
 	res, err := plugin.Download(ctx, task, progressWrapper)
 	if err != nil {
+		if k.logger != nil {
+			k.logger.LogTaskError(task.ID, task.URL, err)
+		}
 		failureResult := Result{
 			TaskID: task.ID,
 			URL:    task.URL,
@@ -261,6 +281,10 @@ func (k *Kernel) executeTask(ctx context.Context, task Task, onEvent EventHandle
 			Err:    err,
 		})
 		return failureResult
+	}
+
+	if k.logger != nil {
+		k.logger.LogTaskSuccess(res.TaskID, res.Filename, res.BytesRead)
 	}
 
 	emitEvent(onEvent, Event{

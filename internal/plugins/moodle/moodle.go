@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"path"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"godownloader/internal/kernel"
+	"godownloader/internal/logger"
 )
 
 var (
@@ -25,6 +27,13 @@ var (
 	ErrUnexpectedStatus = errors.New("unexpected HTTP response status")
 )
 
+type contextKey string
+
+const (
+	cookieContextKey contextKey = "moodle_cookie"
+	taskIDContextKey contextKey = "moodle_task_id"
+)
+
 func init() {
 	kernel.Register(New())
 }
@@ -32,6 +41,7 @@ func init() {
 // Plugin handles resource downloads from Moodle platforms (e.g. UFRO Campus Virtual) and generic HTTP endpoints.
 type Plugin struct {
 	client *http.Client
+	logger *logger.Logger
 }
 
 // Option configures a Plugin instance.
@@ -46,20 +56,35 @@ func WithHTTPClient(client *http.Client) Option {
 	}
 }
 
+// WithLogger associates a debug logger with the Plugin.
+func WithLogger(l *logger.Logger) Option {
+	return func(p *Plugin) {
+		p.logger = l
+	}
+}
+
 // New creates a new Plugin with default settings.
 func New(opts ...Option) *Plugin {
-	p := &Plugin{
-		client: defaultHTTPClient(),
-	}
+	p := &Plugin{}
 	for _, opt := range opts {
 		opt(p)
+	}
+	if p.client == nil {
+		p.client = defaultHTTPClient(p.logger)
 	}
 	return p
 }
 
-func defaultHTTPClient() *http.Client {
+func defaultHTTPClient(l *logger.Logger) *http.Client {
+	jar, _ := cookiejar.New(nil)
 	return &http.Client{
+		Jar: jar,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if l != nil && len(via) > 0 {
+				taskID, _ := req.Context().Value(taskIDContextKey).(int)
+				l.LogTaskRedirect(taskID, via[len(via)-1].URL.String(), req.URL.String(), req.Response.StatusCode)
+			}
+
 			target := strings.ToLower(req.URL.String())
 			if strings.Contains(target, "/login") || strings.Contains(target, "login.php") {
 				return fmt.Errorf("%w: redirected to login page (%s)", ErrAuthenticationFailed, req.URL.String())
@@ -67,9 +92,10 @@ func defaultHTTPClient() *http.Client {
 			if len(via) >= 10 {
 				return errors.New("stopped after 10 redirects")
 			}
-			// Propagate cookie header to same-host redirects
-			if len(via) > 0 && req.URL.Host == via[0].URL.Host {
-				if cookie := via[0].Header.Get("Cookie"); cookie != "" {
+
+			// Reliably propagate cookie across redirects within the same domain
+			if cookie, ok := req.Context().Value(cookieContextKey).(string); ok && cookie != "" {
+				if len(via) > 0 && isSameDomain(req.URL.Hostname(), via[0].URL.Hostname()) {
 					req.Header.Set("Cookie", cookie)
 				}
 			}
@@ -77,6 +103,12 @@ func defaultHTTPClient() *http.Client {
 		},
 		Timeout: 60 * time.Second,
 	}
+}
+
+func isSameDomain(h1, h2 string) bool {
+	h1 = strings.ToLower(h1)
+	h2 = strings.ToLower(h2)
+	return h1 == h2 || strings.HasSuffix(h1, "."+h2) || strings.HasSuffix(h2, "."+h1)
 }
 
 // Name returns the identifier of this plugin.
@@ -96,6 +128,9 @@ func (p *Plugin) CanHandle(rawURL string) bool {
 
 // Download downloads the resource specified by task.URL using the given cookie.
 func (p *Plugin) Download(ctx context.Context, task kernel.Task, progress kernel.ProgressFunc) (*kernel.Result, error) {
+	ctx = context.WithValue(ctx, cookieContextKey, task.Cookie)
+	ctx = context.WithValue(ctx, taskIDContextKey, task.ID)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, task.URL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -115,6 +150,16 @@ func (p *Plugin) Download(ctx context.Context, task kernel.Task, progress kernel
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+
+	if p.logger != nil {
+		p.logger.LogTaskResponse(
+			task.ID,
+			resp.StatusCode,
+			resp.Header.Get("Content-Type"),
+			resp.ContentLength,
+			resp.Header.Get("Content-Disposition"),
+		)
+	}
 
 	if err := checkResponseStatus(resp); err != nil {
 		return nil, err

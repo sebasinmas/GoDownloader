@@ -77,11 +77,24 @@ Usage of ./bin/godownloader:
         Number of concurrent downloads (default 5)
   -output string
         Directory to save downloaded files (default ".")
+  -logger
+        Enable debug logging to file (default 'godownloader_debug.txt') or specify path (e.g. -logger debug.txt)
+  -log
+        Alias for -logger
+  -logfile string
+        Specify custom log file path
 ```
 
-Example specifying custom output folder and concurrency limit:
+#### Examples with Debug Logging
 ```bash
-./bin/godownloader -output ./downloads -concurrency 8
+# Run with default debug log file (godownloader_debug.txt)
+./bin/godownloader -logger
+
+# Run with custom debug log file
+./bin/godownloader -logger debug.txt
+
+# Download to custom folder with 8 workers and custom log file
+./bin/godownloader -output ./downloads -concurrency 8 -log logs.txt
 ```
 
 ---

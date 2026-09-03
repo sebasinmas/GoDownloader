@@ -67,17 +67,18 @@ type allDoneMsg struct {
 }
 
 type progressModel struct {
-	kernel    *kernel.Kernel
-	tasks     []kernel.Task
-	items     []itemState
-	spinner   spinner.Model
-	startTime time.Time
-	done      bool
-	results   []kernel.Result
-	eventChan chan kernel.Event
+	kernel      *kernel.Kernel
+	tasks       []kernel.Task
+	items       []itemState
+	spinner     spinner.Model
+	startTime   time.Time
+	done        bool
+	results     []kernel.Result
+	eventChan   chan kernel.Event
+	logFilePath string
 }
 
-func newProgressModel(k *kernel.Kernel, tasks []kernel.Task) *progressModel {
+func newProgressModel(k *kernel.Kernel, tasks []kernel.Task, logFilePath string) *progressModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9"))
@@ -93,12 +94,13 @@ func newProgressModel(k *kernel.Kernel, tasks []kernel.Task) *progressModel {
 	}
 
 	return &progressModel{
-		kernel:    k,
-		tasks:     tasks,
-		items:     items,
-		spinner:   s,
-		startTime: time.Now(),
-		eventChan: make(chan kernel.Event, 100),
+		kernel:      k,
+		tasks:       tasks,
+		items:       items,
+		spinner:     s,
+		startTime:   time.Now(),
+		eventChan:   make(chan kernel.Event, 100),
+		logFilePath: logFilePath,
 	}
 }
 
@@ -228,12 +230,23 @@ func (m *progressModel) renderSummary() string {
 
 	duration := time.Since(m.startTime).Round(time.Millisecond)
 
+	logLine := ""
+	if m.logFilePath != "" {
+		logLine = fmt.Sprintf("  Debug Log:        %s\n", boldStyle.Render(m.logFilePath))
+	}
+
+	helpHint := dimStyle.Render("Press Enter or 'q' to exit.")
+	if failed > 0 && m.logFilePath != "" {
+		helpHint = fmt.Sprintf("%s\n  %s", failedBadge.Render("Check debug log for error causes."), helpHint)
+	}
+
 	summaryText := fmt.Sprintf(
 		"Downloads Completed in %s\n\n"+
 			"  Total Files:      %d\n"+
 			"  %s:   %d\n"+
 			"  %s:        %d\n"+
-			"  Transferred:      %s\n\n"+
+			"  Transferred:      %s\n"+
+			"%s\n"+
 			"%s",
 		duration,
 		len(m.tasks),
@@ -242,15 +255,16 @@ func (m *progressModel) renderSummary() string {
 		failedBadge.Render("Failed"),
 		failed,
 		formatBytes(totalBytes),
-		dimStyle.Render("Press Enter or 'q' to exit."),
+		logLine,
+		helpHint,
 	)
 
 	return cardBorder.Render(summaryText) + "\n"
 }
 
 // RunProgressUI starts the Bubble Tea parallel download progress interface.
-func RunProgressUI(k *kernel.Kernel, tasks []kernel.Task) ([]kernel.Result, error) {
-	model := newProgressModel(k, tasks)
+func RunProgressUI(k *kernel.Kernel, tasks []kernel.Task, logFilePath string) ([]kernel.Result, error) {
+	model := newProgressModel(k, tasks, logFilePath)
 	p := tea.NewProgram(model)
 	finalModel, err := p.Run()
 	if err != nil {

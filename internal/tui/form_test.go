@@ -41,3 +41,38 @@ func TestCleanURLs_Empty(t *testing.T) {
 		t.Errorf("expected empty slice for whitespace string")
 	}
 }
+
+func TestNormalizeCookie(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "MoodleSession=abc123xyz",
+			expected: "MoodleSession=abc123xyz",
+		},
+		{
+			input:    "  Cookie: MoodleSession=abc123xyz  ",
+			expected: "MoodleSession=abc123xyz",
+		},
+		{
+			input:    `"MoodleSession=abc123xyz"`,
+			expected: "MoodleSession=abc123xyz",
+		},
+		{
+			input:    "abc123xyz",
+			expected: "MoodleSession=abc123xyz",
+		},
+		{
+			input:    "custom_session=123; tracking=456",
+			expected: "custom_session=123; tracking=456",
+		},
+	}
+
+	for _, tc := range tests {
+		actual := tui.NormalizeCookie(tc.input)
+		if actual != tc.expected {
+			t.Errorf("input '%s': expected '%s', got '%s'", tc.input, tc.expected, actual)
+		}
+	}
+}

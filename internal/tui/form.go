@@ -102,7 +102,22 @@ func RunInteractiveForm() (*FormData, error) {
 	}
 
 	return &FormData{
-		Cookie: strings.TrimSpace(cookie),
+		Cookie: NormalizeCookie(cookie),
 		URLs:   CleanURLs(rawURLs),
 	}, nil
+}
+
+// NormalizeCookie cleans and standardizes session cookies.
+// It trims whitespace, removes surrounding quotes, strips leading "Cookie:" prefix,
+// and if a raw token without key=value is supplied, prefixes "MoodleSession=".
+func NormalizeCookie(raw string) string {
+	c := strings.TrimSpace(raw)
+	c = strings.Trim(c, `"'`)
+	if strings.HasPrefix(strings.ToLower(c), "cookie:") {
+		c = strings.TrimSpace(c[7:])
+	}
+	if c != "" && !strings.Contains(c, "=") {
+		c = "MoodleSession=" + c
+	}
+	return c
 }
