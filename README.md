@@ -5,7 +5,7 @@
 **Descargas masivas, concurrentes y ultrarrápidas para Campus Virtual UFRO y cualquier intranet basada en Moodle.**
 
 [![CI](https://github.com/sebasinmas/GoDownloader/actions/workflows/ci.yml/badge.svg)](https://github.com/sebasinmas/GoDownloader/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/sebasinmas/GoDownloader)](https://goreportcard.com/report/github.com/sebasinmas/GoDownloader)
+
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
