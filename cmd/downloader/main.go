@@ -10,6 +10,7 @@ import (
 
 	"godownloader/internal/kernel"
 	"godownloader/internal/logger"
+	"godownloader/internal/plugins/demo"
 	"godownloader/internal/plugins/moodle"
 	"godownloader/internal/tui"
 )
@@ -43,6 +44,7 @@ func (f *loggerFlag) IsBoolFlag() bool {
 func main() {
 	concurrencyFlag := flag.Int("concurrency", 5, "Número de descargas concurrentes")
 	outputDirFlag := flag.String("output", ".", "Directorio donde guardar los archivos descargados")
+	demoFlag := flag.Bool("demo", false, "Ejecutar en modo demostración para showcases (simula descargas de PDFs con cualquier token y links)")
 
 	var logCfg loggerFlag
 	flag.Var(&logCfg, "logger", "Habilitar registro de depuración en archivo (por defecto 'godownloader_debug.txt') o especificar ruta (ej. -logger debug.txt)")
@@ -62,7 +64,7 @@ func main() {
 		logCfg.filePath = *logFilePathExplicit
 	}
 
-	formData, err := tui.RunInteractiveForm()
+	formData, err := tui.RunInteractiveForm(*demoFlag)
 	if err != nil {
 		if errors.Is(err, tui.ErrFormAborted) {
 			fmt.Println("\nDescarga cancelada por el usuario.")
@@ -72,13 +74,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	appLogger, logPath := setupLogger(logCfg, *concurrencyFlag, *outputDirFlag, formData)
+	appLogger, logPath := setupLogger(logCfg, *concurrencyFlag, *outputDirFlag, formData, *demoFlag)
 	if appLogger != nil {
 		defer func() { _ = appLogger.Close() }()
 	}
 
 	tasks := createTasks(formData, *outputDirFlag)
-	k := initKernel(*concurrencyFlag, appLogger)
+	k := initKernel(*concurrencyFlag, appLogger, *demoFlag)
 
 	results, err := tui.RunProgressUI(k, tasks, logPath)
 	if err != nil {
@@ -89,7 +91,7 @@ func main() {
 	handleCompletion(results, logPath)
 }
 
-func setupLogger(cfg loggerFlag, concurrency int, outputDir string, form *tui.FormData) (*logger.Logger, string) {
+func setupLogger(cfg loggerFlag, concurrency int, outputDir string, form *tui.FormData, isDemo bool) (*logger.Logger, string) {
 	if !cfg.enabled {
 		return nil, ""
 	}
@@ -100,7 +102,11 @@ func setupLogger(cfg loggerFlag, concurrency int, outputDir string, form *tui.Fo
 		return nil, ""
 	}
 
-	l.Printf("GoDownloader inicializado. Concurrencia: %d | Directorio: %s", concurrency, outputDir)
+	if isDemo {
+		l.Printf("GoDownloader inicializado en MODO DEMO. Concurrencia: %d | Directorio: %s", concurrency, outputDir)
+	} else {
+		l.Printf("GoDownloader inicializado. Concurrencia: %d | Directorio: %s", concurrency, outputDir)
+	}
 	l.Printf("Cookie de sesión: %s", logger.RedactCookie(form.Cookie))
 	l.Printf("Total de URLs en cola: %d", len(form.URLs))
 	return l, cfg.filePath
@@ -119,17 +125,25 @@ func createTasks(form *tui.FormData, outputDir string) []kernel.Task {
 	return tasks
 }
 
-func initKernel(concurrency int, l *logger.Logger) *kernel.Kernel {
+func initKernel(concurrency int, l *logger.Logger, isDemo bool) *kernel.Kernel {
 	opts := []kernel.Option{
 		kernel.WithConcurrency(concurrency),
 	}
-	if l != nil {
+	if isDemo {
 		opts = append(opts,
-			kernel.WithLogger(l),
+			kernel.WithPlugins([]kernel.DownloaderPlugin{
+				demo.New(demo.WithLogger(l)),
+			}),
+		)
+	} else if l != nil {
+		opts = append(opts,
 			kernel.WithPlugins([]kernel.DownloaderPlugin{
 				moodle.New(moodle.WithLogger(l)),
 			}),
 		)
+	}
+	if l != nil {
+		opts = append(opts, kernel.WithLogger(l))
 	}
 	return kernel.New(opts...)
 }

@@ -25,8 +25,9 @@ var (
 	cardBorder = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#7D56F4")).
-			Padding(1, 2).
-			MarginTop(1)
+			Padding(0, 2).
+			MarginTop(1).
+			Width(56)
 
 	successBadge = lipgloss.NewStyle().
 			Bold(true).
@@ -54,7 +55,8 @@ var (
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#FFB86C")).
 			Padding(0, 2).
-			MarginTop(1)
+			MarginTop(1).
+			Width(56)
 
 	authorHighlight = lipgloss.NewStyle().
 			Bold(true).
@@ -148,7 +150,10 @@ func (m *progressModel) waitForEvents() tea.Cmd {
 func (m *progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.String() == "q" || msg.String() == "ctrl+c" || (m.done && msg.String() == "enter") {
+		if msg.Type == tea.KeyCtrlC || msg.String() == "ctrl+c" || msg.String() == "q" {
+			return m, tea.Quit
+		}
+		if m.done {
 			return m, tea.Quit
 		}
 
@@ -193,7 +198,7 @@ func (m *progressModel) View() string {
 	var b strings.Builder
 
 	b.WriteString(titleStyle.Render("⚡ GoDownloader • Transferencia Concurrente de Recursos"))
-	b.WriteString("\n\n")
+	b.WriteString("\n")
 
 	for _, it := range m.items {
 		b.WriteString(m.renderItem(it))
@@ -251,36 +256,24 @@ func (m *progressModel) renderSummary() string {
 		duration = time.Since(m.startTime).Round(time.Millisecond)
 	}
 
-	logLine := ""
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "Descargas completadas en %s\n\n", duration)
+	fmt.Fprintf(&sb, "  Archivos totales: %d\n", len(m.tasks))
+	fmt.Fprintf(&sb, "  %s:         %d\n", successBadge.Render("Exitosos"), successful)
+	fmt.Fprintf(&sb, "  %s:          %d\n", failedBadge.Render("Fallidos"), failed)
+	fmt.Fprintf(&sb, "  Transferido:      %s\n", formatBytes(totalBytes))
+
 	if m.logFilePath != "" {
-		logLine = fmt.Sprintf("  Registro de depuración: %s\n", boldStyle.Render(m.logFilePath))
+		fmt.Fprintf(&sb, "  Registro:         %s\n", boldStyle.Render(m.logFilePath))
 	}
 
-	helpHint := dimStyle.Render("Presiona Enter o 'q' para salir.")
 	if failed > 0 && m.logFilePath != "" {
-		helpHint = fmt.Sprintf("%s\n  %s", failedBadge.Render("Revisa el registro de depuración para ver las causas del error."), helpHint)
+		fmt.Fprintf(&sb, "\n  %s\n", failedBadge.Render("Revisa el registro de depuración para ver las causas."))
 	}
 
-	summaryText := fmt.Sprintf(
-		"Descargas completadas en %s\n\n"+
-			"  Archivos totales: %d\n"+
-			"  %s:         %d\n"+
-			"  %s:          %d\n"+
-			"  Transferido:      %s\n"+
-			"%s\n"+
-			"%s",
-		duration,
-		len(m.tasks),
-		successBadge.Render("Exitosos"),
-		successful,
-		failedBadge.Render("Fallidos"),
-		failed,
-		formatBytes(totalBytes),
-		logLine,
-		helpHint,
-	)
+	fmt.Fprintf(&sb, "\n  %s", dimStyle.Render("Presiona cualquier tecla para salir."))
 
-	return cardBorder.Render(summaryText) + "\n"
+	return cardBorder.Render(sb.String()) + "\n"
 }
 
 func (m *progressModel) renderCompletoBox() string {

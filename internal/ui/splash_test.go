@@ -21,7 +21,7 @@ func (d *dummyModel) Init() tea.Cmd {
 	return nil
 }
 
-func (d *dummyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (d *dummyModel) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 	d.updated = true
 	return d, nil
 }

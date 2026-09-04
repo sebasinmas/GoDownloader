@@ -100,3 +100,64 @@ func TestNormalizeCookie(t *testing.T) {
 		}
 	}
 }
+
+func TestCleanURLsDemo(t *testing.T) {
+	raw := `
+https://campusvirtual.ufro.cl/mod/resource/view.php?id=101/Calculo.pdf
+campusvirtual.ufro.cl/mod/resource/view.php?id=102/Algebra.pdf
+"Guia_03_Fisica.pdf"
+<https://example.com/demo.pdf>
+https://campusvirtual.ufro.cl/mod/resource/view.php?id=101/Calculo.pdf
+`
+
+	urls := tui.CleanURLsDemo(raw)
+	if len(urls) != 4 {
+		t.Fatalf("expected 4 deduplicated URLs, got %d: %#v", len(urls), urls)
+	}
+
+	if urls[0] != "https://campusvirtual.ufro.cl/mod/resource/view.php?id=101/Calculo.pdf" {
+		t.Errorf("unexpected url[0]: %s", urls[0])
+	}
+	if urls[1] != "https://campusvirtual.ufro.cl/mod/resource/view.php?id=102/Algebra.pdf" {
+		t.Errorf("unexpected url[1]: %s", urls[1])
+	}
+	if urls[2] != "https://Guia_03_Fisica.pdf" {
+		t.Errorf("unexpected url[2]: %s", urls[2])
+	}
+	if urls[3] != "https://example.com/demo.pdf" {
+		t.Errorf("unexpected url[3]: %s", urls[3])
+	}
+}
+
+func TestCleanURLsDemo_Empty(t *testing.T) {
+	urls := tui.CleanURLsDemo("")
+	if len(urls) == 0 {
+		t.Errorf("expected default sample URLs when input is empty in demo mode")
+	}
+
+	urlsWhitespace := tui.CleanURLsDemo("   \n\n  \t ")
+	if len(urlsWhitespace) == 0 {
+		t.Errorf("expected default sample URLs when input is whitespace in demo mode")
+	}
+}
+
+func TestNewInteractiveForm_DemoDefaults(t *testing.T) {
+	ctrl := tui.NewInteractiveForm(true)
+	if ctrl == nil || ctrl.Form == nil {
+		t.Fatal("expected non-nil form controller")
+	}
+
+	data := ctrl.GetData()
+	if data == nil {
+		t.Fatal("expected non-nil FormData")
+	}
+
+	if data.Cookie != "MoodleSession=demo_session_ufro_showcase" {
+		t.Errorf("expected default demo cookie, got %q", data.Cookie)
+	}
+
+	if len(data.URLs) != 3 {
+		t.Errorf("expected 3 default sample URLs, got %d", len(data.URLs))
+	}
+}
+
